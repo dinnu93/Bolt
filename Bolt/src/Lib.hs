@@ -23,12 +23,15 @@ encodeJSON "true" = BBool True
 encodeJSON "false" = BBool False
 encodeJSON "null" = BNull
 encodeJSON s
-  | isJSONNumber s = parseJSONNumber s
-  | isJSONString s = parseJSONString s
-  | isJSONArray s = parseJSONArray s
-  | isJSONObject s = parseJSONObject s
+  | stripped == "true" = BBool True
+  | stripped == "false" = BBool False
+  | stripped == "null" = BNull
+  | isJSONNumber stripped = parseJSONNumber stripped
+  | isJSONString stripped = parseJSONString stripped 
+  | isJSONArray stripped = parseJSONArray stripped 
+  | isJSONObject stripped = parseJSONObject stripped 
   | otherwise = error "Not a valid JSON String!"
-  
+  where stripped = strip . stripLines $ s
 
 -- Predicates for JSON data types
 
@@ -38,8 +41,11 @@ encapsulatedIn c1 c2 s
   | (length s > 1) && (head s) == c1 && (last s) == c2 = True
   | otherwise = False 
 
+stripLines :: String -> String
+stripLines s = join " " . lines $ s
+
 strippedString :: String -> String
-strippedString s = drop 1 . take (l-1) $ stripStr
+strippedString s = tail . init $ stripStr
   where stripStr = strip s
         l = length stripStr
     
@@ -64,13 +70,14 @@ parseJSONNumber :: String -> BValue
 parseJSONNumber s = BNumber (read $ strip s :: Double) 
 
 parseJSONArray :: String -> BValue
-parseJSONArray s = BArray (map encodeJSON . split "," . strippedString $ s)
+parseJSONArray s = BArray (map encodeJSON . split "," . strippedString . stripLines $ s)
 
 parseJSONPair :: String -> (String, BValue)
-parseJSONPair s = (strippedString key, encodeJSON value)
-  where [key,value] = map strip . split ":" . strip $ s
+parseJSONPair s = (strippedString (key ++ "\""), encodeJSON value)
+  where [key,value] = map strip . split "\":" . strip $ s
 
 parseJSONObject :: String -> BValue
-parseJSONObject s = BObject (Map.fromList . map parseJSONPair . split "," . strippedString $ s)
-
+parseJSONObject s = BObject (Map.fromList . map parseJSONPair $ objList)
+  where preObjList = split "\"," . strippedString . stripLines $ s
+        objList = map (++"\"") (init preObjList) ++ [last preObjList]
 

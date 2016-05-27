@@ -19,9 +19,6 @@ data BValue = BObject (Map.Map String BValue)| -- can be identified with {}
 
 
 encodeJSON :: String -> BValue
-encodeJSON "true" = BBool True
-encodeJSON "false" = BBool False
-encodeJSON "null" = BNull
 encodeJSON s
   | stripped == "true" = BBool True
   | stripped == "false" = BBool False
@@ -77,7 +74,10 @@ parseJSONPair s = (strippedString (key ++ "\""), encodeJSON value)
   where [key,value] = map strip . split "\":" . strip $ s
 
 parseJSONObject :: String -> BValue
-parseJSONObject s = BObject (Map.fromList . map parseJSONPair $ objList)
+parseJSONObject s
+  | l == 0 = BObject (Map.fromList [])
+  | otherwise = BObject (Map.fromList . map parseJSONPair $ objList)
   where preObjList = split "\"," . strippedString . stripLines $ s
+        l = length preObjList
         objList = map (++"\"") (init preObjList) ++ [last preObjList]
 

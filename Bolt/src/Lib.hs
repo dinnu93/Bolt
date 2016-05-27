@@ -16,8 +16,6 @@ data BValue = BObject (Map.Map String BValue)| -- can be identified with {}
 
 -- Encoding a JSON string into the BValue algebraic data type.
 
-
-
 encodeJSON :: String -> BValue
 encodeJSON s
   | stripped == "true" = BBool True

@@ -19,6 +19,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , MissingH
                      , containers
+                     , parsec
   default-language:    Haskell2010
 
 executable Bolt-exe
@@ -29,6 +30,7 @@ executable Bolt-exe
                      , Bolt
                      , MissingH
                      , containers
+                     , parsec
   default-language:    Haskell2010
 
 test-suite Bolt-test
@@ -39,6 +41,7 @@ test-suite Bolt-test
                      , Bolt
                      , MissingH
                      , containers
+                     , parsec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

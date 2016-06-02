@@ -37,7 +37,7 @@ encapsulatedIn c1 c2 s
   | otherwise = False 
 
 stripLines :: String -> String
-stripLines s = join " " . lines $ s
+stripLines s = join "" . lines $ s
 
 strippedString :: String -> String
 strippedString s = tail . init $ stripStr
@@ -65,7 +65,7 @@ parseJSONNumber :: String -> BValue
 parseJSONNumber s = BNumber (read $ strip s :: Double) 
 
 parseJSONArray :: String -> BValue
-parseJSONArray s = BArray (map encodeJSON . split "," . strippedString . stripLines $ s)
+parseJSONArray s = BArray (map encodeJSON . map (\s -> s ++ "\"") . split "\"," . strippedString . stripLines $ s)
 
 parseJSONPair :: String -> (String, BValue)
 parseJSONPair s = (strippedString (key ++ "\""), encodeJSON value)
@@ -79,3 +79,16 @@ parseJSONObject s
         l = length preObjList
         objList = map (++"\"") (init preObjList) ++ [last preObjList]
 
+removeEscapes :: String -> String
+removeEscapes s = map snd . filter leaveStr $ iList
+  where l = length s
+        iList = zip [0..(l-1)] s
+        strIndex = giveRange . map fst . filter (\(i,e) -> e == '"') $ iList
+        leaveStr (i,e)
+          | elem i strIndex = True
+          | e == ' ' || e == '\n' = False
+          | otherwise = True
+        
+giveRange :: [Int] -> [Int]
+giveRange [] = []
+giveRange (x:y:xs) = [x..y] ++ giveRange xs

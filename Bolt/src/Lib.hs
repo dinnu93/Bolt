@@ -84,4 +84,5 @@ toJSON bValue = case bValue of
   (BNumber n) -> show n
   (BString s) -> "\"" ++ s ++ "\""
   (BArray xs) -> "[" ++ (L.intercalate "," . map toJSON $ xs) ++ "]"
-  (BObject ys) -> "{" ++ L.intercalate "," (map (\(k,v) -> k ++ ":" ++ (toJSON v)) ys) ++ "}"
+  (BObject ys) -> "{" ++ L.intercalate "," (map (\(k,v) -> ("\"" ++ k ++ "\"") ++ ":" ++ (toJSON v)) ys) ++ "}"
+

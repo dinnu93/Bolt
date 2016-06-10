@@ -70,7 +70,7 @@ jsonValue = jsonBool <|> jsonNull <|> jsonNumber <|> jsonStringLiteral <|> jsonA
 -- fromJson to BValue data type
 
 fromJSON :: String -> BValue
-fromJSON s = case (parse jsonValue "" $ removeEscapes s) of
+fromJSON s = case (parse (jsonValue <* eof) "" $ removeEscapes s) of
   Right val -> val
   Left err -> error . show $ err 
 

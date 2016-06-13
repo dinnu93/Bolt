@@ -18,26 +18,30 @@ data BValue = BObject [(String, BValue)]| -- can be identified with {}
 
 -- BValue Parser Combinators
 
+-- Parser to remove white spaces
+ws :: Parser String
+ws = many (oneOf " \t\n\r")
+
 jsonBool :: Parser BValue
-jsonBool = BBool <$> (((string "true") *> (pure True)) <|> ((string "false") *> (pure False)))
+jsonBool = BBool <$> (ws *> (((string "true") *> (pure True)) <|> ((string "false") *> (pure False))) <* ws)
 
 jsonNumber :: Parser BValue
-jsonNumber = BNumber . (\n -> read n :: Double) <$> (many1 digit)
+jsonNumber = BNumber . (\n -> read n :: Double) <$> (ws *> (many1 digit) <* ws)
 
 jsonNull :: Parser BValue
-jsonNull = string "null" *> pure BNull 
+jsonNull = (ws *> string "null" <* ws) *> pure BNull 
 
 stringLiteral :: Parser String
-stringLiteral = char '"' *> (many (noneOf ['"'])) <* char '"'
+stringLiteral = ws *> (char '"' *> (many (noneOf ['"'])) <* char '"') <* ws
 
 jsonStringLiteral :: Parser BValue
 jsonStringLiteral = BString <$> stringLiteral
 
 jsonArray :: Parser BValue
-jsonArray = BArray <$> ((char '[') *> (jsonValue `sepBy` (char ',')) <* (char ']'))
+jsonArray = BArray <$> (ws *> ((char '[') *> (ws *> (jsonValue `sepBy` (char ',')) <* ws) <* (char ']')) <* ws)
 
 jsonObject :: Parser BValue
-jsonObject = BObject <$> (char '{' *> objectEntry `sepBy` (char ',') <* char '}')
+jsonObject = BObject <$> (ws *> (char '{' *> (ws *> (objectEntry `sepBy` (char ',')) <* ws) <* char '}') <* ws)
 
 objectEntry :: Parser (String, BValue)
 objectEntry = do
@@ -46,31 +50,15 @@ objectEntry = do
   value <- jsonValue
   return (key, value)
 
--- Remove Escapes " \t\n\r"
-
-removeEscapes :: String -> String
-removeEscapes s = map snd . filter leaveStr $ iList
-  where l = length s
-        iList = zip [0..(l-1)] s
-        strIndex = giveRange . map fst . filter (\(i,e) -> e == '"') $ iList
-        leaveStr (i,e)
-          | elem i strIndex = True
-          | elem e " \t\n\r" = False
-          | otherwise = True
-        
-giveRange :: [Int] -> [Int]
-giveRange [] = []
-giveRange (x:y:xs) = [x..y] ++ giveRange xs
-
 -- Final json parser
 
 jsonValue :: Parser BValue
-jsonValue = jsonBool <|> jsonNull <|> jsonNumber <|> jsonStringLiteral <|> jsonArray <|> jsonObject
+jsonValue = try jsonBool <|> try jsonNull <|> try jsonNumber <|> try jsonStringLiteral <|> try jsonArray <|> jsonObject
 
 -- fromJson to BValue data type
 
 fromJSON :: String -> BValue
-fromJSON s = case (parse (jsonValue <* eof) "" $ removeEscapes s) of
+fromJSON s = case (parse jsonValue "" $ s) of
   Right val -> val
   Left err -> error . show $ err 
 
